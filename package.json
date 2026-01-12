@@ -1,0 +1,11 @@
+{
+  "name": "rhizonote-public",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "dependencies": {
+    "dropbox": "^10.34.0"
+  }
+}
