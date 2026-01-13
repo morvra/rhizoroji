@@ -948,7 +948,7 @@ notes.forEach(note => {
     }
     .related-card {
       display: block;
-      background: #f9fafb;
+      background: white;
       border: 1px solid #e5e7eb;
       border-radius: 0.5rem;
       padding: 1rem;
