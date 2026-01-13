@@ -339,14 +339,8 @@ function findRelatedNotes(note, allNotes) {
     const target = allNotes.find(n => n.title === title);
     if (target && target.id !== note.id) {
       result.outgoing.push(target);
-    } else if (!target) {
-      // Ghost note
-      result.outgoing.push({
-        id: `ghost-${title}`,
-        title: title,
-        isGhost: true
-      });
     }
+    // Ghost noteは追加しない（表示させないため）
   });
   
   // 2. Backlinks（このノートへのリンク）
@@ -390,13 +384,8 @@ function findRelatedNotes(note, allNotes) {
       const target = allNotes.find(n => n.title === linkedTitle);
       if (target && target.id !== note.id && !directIds.has(target.id)) {
         relatedViaThis.push(target);
-      } else if (!target) {
-        relatedViaThis.push({
-          id: `ghost-via-${directNote.id}-${linkedTitle}`,
-          title: linkedTitle,
-          isGhost: true
-        });
       }
+      // Ghost noteは追加しない
     });
     
     // directNote への Backlinks
@@ -485,7 +474,7 @@ function generateCommonHTML(currentNoteId = null) {
               <path d="M3 12h18M3 6h18M3 18h18"/>
             </svg>
           </button>
-          <a href="index.html" class="site-title">🍵 Rhizoroji</a>
+          <a href="index.html" class="site-title">🍵Rhizoroji</a>
           <button class="random-button" onclick="openRandomNote()" title="Random Note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
@@ -958,19 +947,18 @@ notes.forEach(note => {
       margin-bottom: 2rem;
     }
     .related-card {
+      display: block;
       background: #f9fafb;
       border: 1px solid #e5e7eb;
       border-radius: 0.5rem;
       padding: 1rem;
       transition: all 0.2s;
+      text-decoration: none;
     }
     .related-card:hover {
       background: white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    .related-card.ghost {
-      border-style: dashed;
-      opacity: 0.6;
+      border-color: #c7d2fe;
     }
     .related-card-title {
       font-weight: 600;
@@ -979,12 +967,8 @@ notes.forEach(note => {
       margin-bottom: 0.5rem;
       text-decoration: none;
     }
-    .related-card-title:hover {
+    .related-card:hover .related-card-title {
       color: #4f46e5;
-    }
-    .related-card.ghost .related-card-title {
-      color: #6b7280;
-      font-style: italic;
     }
     .related-card-snippet {
       font-size: 0.8125rem;
@@ -994,11 +978,6 @@ notes.forEach(note => {
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-    .related-card-meta {
-      font-size: 0.75rem;
-      color: #9ca3af;
-      font-style: italic;
     }
     .hub-section {
       margin-bottom: 2rem;
@@ -1067,15 +1046,10 @@ notes.forEach(note => {
             <h2>Direct References</h2>
             <div class="related-grid">
               ${directRefs.map(n => `
-                <div class="related-card ${n.isGhost ? 'ghost' : ''}">
-                  ${n.isGhost ? `
-                    <div class="related-card-title">${n.title}</div>
-                    <div class="related-card-meta">Missing note</div>
-                  ` : `
-                    <a href="${n.id}.html" class="related-card-title">${n.title}</a>
-                    <div class="related-card-snippet">${getSnippet(n.content)}</div>
-                  `}
-                </div>
+                <a href="${n.id}.html" class="related-card">
+                  <div class="related-card-title">${n.title}</div>
+                  <div class="related-card-snippet">${getSnippet(n.content)}</div>
+                </a>
               `).join('')}
             </div>
           ` : ''}
@@ -1092,15 +1066,10 @@ notes.forEach(note => {
                 </div>
                 <div class="related-grid">
                   ${connections.map(n => `
-                    <div class="related-card ${n.isGhost ? 'ghost' : ''}">
-                      ${n.isGhost ? `
-                        <div class="related-card-title">${n.title}</div>
-                        <div class="related-card-meta">Missing note</div>
-                      ` : `
-                        <a href="${n.id}.html" class="related-card-title">${n.title}</a>
-                        <div class="related-card-snippet">${getSnippet(n.content)}</div>
-                      `}
-                    </div>
+                    <a href="${n.id}.html" class="related-card">
+                      <div class="related-card-title">${n.title}</div>
+                      <div class="related-card-snippet">${getSnippet(n.content)}</div>
+                    </a>
                   `).join('')}
                 </div>
               </div>
