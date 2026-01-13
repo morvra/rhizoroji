@@ -517,6 +517,7 @@ function generateCommonHTML(currentNoteId = null) {
         transition: background-color 0.2s;
       }
       .folder-notes a:hover {
+        text-decoration: none;
         background: #f3f4f6;
         color: #1f2937;
       }
@@ -529,7 +530,7 @@ function generateCommonHTML(currentNoteId = null) {
       /* メインコンテンツ */
       main {
         margin-left: 280px;
-        padding: 2rem;
+        padding: 1rem;
         transition: margin-left 0.3s ease;
       }
       main.expanded {
