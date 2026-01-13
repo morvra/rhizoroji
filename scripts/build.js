@@ -320,17 +320,109 @@ function buildNestedList(lines, type) {
 }
 
 function findRelatedNotes(note, allNotes) {
-  const related = [];
+  const result = {
+    outgoing: [],      // このノートから他へのリンク
+    backlinks: [],     // 他のノートからこのノートへのリンク
+    twoHop: new Map()  // 2-hop links (hub noteをキーにした Map)
+  };
   
-  allNotes.forEach(other => {
-    if (other.id === note.id) return;
-    const regex = new RegExp(`\\[\\[${note.title}\\]\\]`);
-    if (regex.test(other.content)) {
-      related.push(other);
+  // 1. Outgoing links（本文内のWikiリンク）
+  const wikiLinkRegex = /\[\[(.*?)\]\]/g;
+  let match;
+  const linkedTitles = new Set();
+  
+  while ((match = wikiLinkRegex.exec(note.content)) !== null) {
+    linkedTitles.add(match[1]);
+  }
+  
+  linkedTitles.forEach(title => {
+    const target = allNotes.find(n => n.title === title);
+    if (target && target.id !== note.id) {
+      result.outgoing.push(target);
+    } else if (!target) {
+      // Ghost note
+      result.outgoing.push({
+        id: `ghost-${title}`,
+        title: title,
+        isGhost: true
+      });
     }
   });
   
-  return related;
+  // 2. Backlinks（このノートへのリンク）
+  const titleRegex = new RegExp(`\\[\\[${note.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\]`);
+  
+  allNotes.forEach(other => {
+    if (other.id === note.id) return;
+    if (titleRegex.test(other.content)) {
+      result.backlinks.push(other);
+    }
+  });
+  
+  // 3. Direct references（Outgoing + Backlinks の統合リスト、重複なし）
+  const directIds = new Set([
+    ...result.outgoing.filter(n => !n.isGhost).map(n => n.id),
+    ...result.backlinks.map(n => n.id)
+  ]);
+  
+  // 4. 2-hop links（Related via...）
+  const directNotes = [
+    ...result.outgoing.filter(n => !n.isGhost),
+    ...result.backlinks
+  ];
+  
+  directNotes.forEach(directNote => {
+    const relatedViaThis = [];
+    
+    if (directNote.isGhost) return;
+    
+    // directNote の Outgoing
+    const directNoteLinks = new Set();
+    let m;
+    while ((m = wikiLinkRegex.exec(directNote.content)) !== null) {
+      directNoteLinks.add(m[1]);
+    }
+    
+    directNoteLinks.forEach(linkedTitle => {
+      if (linkedTitle === note.title) return;
+      if (linkedTitle === directNote.title) return;
+      
+      const target = allNotes.find(n => n.title === linkedTitle);
+      if (target && target.id !== note.id && !directIds.has(target.id)) {
+        relatedViaThis.push(target);
+      } else if (!target) {
+        relatedViaThis.push({
+          id: `ghost-via-${directNote.id}-${linkedTitle}`,
+          title: linkedTitle,
+          isGhost: true
+        });
+      }
+    });
+    
+    // directNote への Backlinks
+    const directNoteTitleRegex = new RegExp(`\\[\\[${directNote.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\]`);
+    
+    allNotes.forEach(other => {
+      if (other.id === note.id) return;
+      if (other.id === directNote.id) return;
+      if (directIds.has(other.id)) return;
+      
+      if (directNoteTitleRegex.test(other.content)) {
+        relatedViaThis.push(other);
+      }
+    });
+    
+    // 重複削除
+    const uniqueRelated = relatedViaThis.filter((n, i, self) => 
+      i === self.findIndex(s => s.title === n.title)
+    );
+    
+    if (uniqueRelated.length > 0) {
+      result.twoHop.set(directNote, uniqueRelated);
+    }
+  });
+  
+  return result;
 }
 
 function buildSite() {
@@ -366,10 +458,15 @@ function generateCommonHTML(currentNoteId = null) {
             </svg>
           </button>
           <a href="index.html" class="site-title">Rhizoroji 🍵</a>
-          <div style="width: 24px;"></div>
+          <button class="random-button" onclick="openRandomNote()" title="Random Note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+            </svg>
+          </button>
         </div>
       </header>
       <div class="overlay" onclick="toggleSidebar()"></div>
+`,
     `,
     sidebar: `
       <aside class="sidebar" id="sidebar">
@@ -444,6 +541,19 @@ function generateCommonHTML(currentNoteId = null) {
       }
       .menu-button:hover {
         color: #1f2937;
+      }
+      .random-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: #6b7280;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .random-button:hover {
+        color: #4f46e5;
       }
       
       /* サイドバー */
@@ -567,6 +677,13 @@ function generateCommonHTML(currentNoteId = null) {
       }
     `,
     scripts: `
+      const allNoteIds = ${JSON.stringify(notes.map(n => n.id))};
+      
+      function openRandomNote() {
+        const randomId = allNoteIds[Math.floor(Math.random() * allNoteIds.length)];
+        window.location.href = randomId + '.html';
+      }
+      
       function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const main = document.getElementById('main');
@@ -602,6 +719,20 @@ function generateCommonHTML(currentNoteId = null) {
       window.addEventListener('resize', handleResize);
     `
   };
+}
+
+// スニペット抽出関数（ノート生成前に定義）
+function getSnippet(content) {
+  return content
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[\[(.*?)\]\]/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n+/g, ' ')
+    .trim()
+    .slice(0, 120);
 }
 
 // ノート生成部分を修正
@@ -766,13 +897,78 @@ notes.forEach(note => {
       font-size: 1.1rem; 
       color: #6b7280;
       margin-top: 0;
+      margin-bottom: 1rem;
     }
-    .related ul {
-      list-style: none;
-      padding: 0;
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
-    .related li {
-      margin: 0.5rem 0;
+    .related-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      transition: all 0.2s;
+    }
+    .related-card:hover {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .related-card.ghost {
+      border-style: dashed;
+      opacity: 0.6;
+    }
+    .related-card-title {
+      font-weight: 600;
+      color: #1f2937;
+      display: block;
+      margin-bottom: 0.5rem;
+      text-decoration: none;
+    }
+    .related-card-title:hover {
+      color: #4f46e5;
+    }
+    .related-card.ghost .related-card-title {
+      color: #6b7280;
+      font-style: italic;
+    }
+    .related-card-snippet {
+      font-size: 0.8125rem;
+      color: #6b7280;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .related-card-meta {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      font-style: italic;
+    }
+    .hub-section {
+      margin-bottom: 2rem;
+    }
+    .hub-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+    .hub-title svg {
+      opacity: 0.5;
+    }
+    .hub-title a {
+      color: #7c3aed;
+      text-decoration: none;
+    }
+    .hub-title a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -803,14 +999,64 @@ notes.forEach(note => {
         ${renderMarkdownToHTML(note.content, notes)}
       </div>
       
-      ${relatedNotes.length > 0 ? `
-      <div class="related">
-        <h2>Related Notes</h2>
-        <ul>
-          ${relatedNotes.map(r => `<li><a href="${r.id}.html">${r.title}</a></li>`).join('')}
-        </ul>
-      </div>
-      ` : ''}
+      ${(() => {
+        const hasRelated = relatedNotes.outgoing.length > 0 || 
+                          relatedNotes.backlinks.length > 0 || 
+                          relatedNotes.twoHop.size > 0;
+        
+        if (!hasRelated) return '';
+        
+        const directRefs = [...relatedNotes.outgoing, ...relatedNotes.backlinks]
+          .filter((n, i, self) => i === self.findIndex(s => s.title === n.title));
+        
+        return `
+        <div class="related">
+          ${directRefs.length > 0 ? `
+            <h2>Direct References</h2>
+            <div class="related-grid">
+              ${directRefs.map(n => `
+                <div class="related-card ${n.isGhost ? 'ghost' : ''}">
+                  ${n.isGhost ? `
+                    <div class="related-card-title">${n.title}</div>
+                    <div class="related-card-meta">Missing note</div>
+                  ` : `
+                    <a href="${n.id}.html" class="related-card-title">${n.title}</a>
+                    <div class="related-card-snippet">${getSnippet(n.content)}</div>
+                  `}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${relatedNotes.twoHop.size > 0 ? `
+            <h2>Related via...</h2>
+            ${Array.from(relatedNotes.twoHop.entries()).map(([hub, connections]) => `
+              <div class="hub-section">
+                <div class="hub-title">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 3v10M3 8h10M5 5l6 6M11 5l-6 6"/>
+                  </svg>
+                  <a href="${hub.id}.html">${hub.title}</a>
+                </div>
+                <div class="related-grid">
+                  ${connections.map(n => `
+                    <div class="related-card ${n.isGhost ? 'ghost' : ''}">
+                      ${n.isGhost ? `
+                        <div class="related-card-title">${n.title}</div>
+                        <div class="related-card-meta">Missing note</div>
+                      ` : `
+                        <a href="${n.id}.html" class="related-card-title">${n.title}</a>
+                        <div class="related-card-snippet">${getSnippet(n.content)}</div>
+                      `}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+          ` : ''}
+        </div>
+        `;
+      })()}
     </div>
   </main>
   
@@ -855,20 +1101,6 @@ notes.forEach(note => {
   }
 
   const { folders: folderList, rootNotes } = buildFolderStructure(notes);
-
-  // スニペット抽出関数
-  function getSnippet(content) {
-    return content
-      .replace(/!\[.*?\]\(.*?\)/g, '')
-      .replace(/\[\[(.*?)\]\]/g, '$1')
-      .replace(/#{1,6}\s/g, '')
-      .replace(/(\*\*|__)(.*?)\1/g, '$2')
-      .replace(/(\*|_)(.*?)\1/g, '$2')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/\n+/g, ' ')
-      .trim()
-      .slice(0, 120);
-  }
 
   // サムネイル抽出関数
   function getThumbnail(content) {
