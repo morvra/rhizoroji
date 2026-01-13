@@ -412,7 +412,7 @@ function generateCommonHTML(currentNoteId = null) {
       header {
         background: white;
         border-bottom: 1px solid #e5e7eb;
-        padding: 1rem 2rem;
+        padding: .5rem 1rem;
         position: sticky;
         top: 0;
         z-index: 100;
@@ -456,7 +456,7 @@ function generateCommonHTML(currentNoteId = null) {
         background: white;
         border-right: 1px solid #e5e7eb;
         overflow-y: auto;
-        padding: 1.5rem;
+        padding: 1rem;
         transition: transform 0.3s ease;
       }
       .sidebar.closed {
