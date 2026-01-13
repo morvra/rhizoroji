@@ -643,15 +643,21 @@ function buildSite() {
       color: #1f2937;
       text-decoration: none;
     }
+    .site-title:hover {
+      text-decoration: none;
+    }
     .menu-button {
-      display: none;
       background: none;
       border: none;
       cursor: pointer;
       padding: 0.5rem;
       color: #6b7280;
+      transition: color 0.2s;
     }
-    
+    .menu-button:hover {
+      color: #1f2937;
+    }
+
     /* サイドバー */
     .sidebar {
       position: fixed;
@@ -668,9 +674,9 @@ function buildSite() {
     .sidebar.closed {
       transform: translateX(-100%);
     }
-    
+
     .folder-section {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
     .folder-header {
       display: flex;
@@ -681,7 +687,7 @@ function buildSite() {
       color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
       cursor: pointer;
       user-select: none;
       padding: 0.25rem;
@@ -709,14 +715,14 @@ function buildSite() {
       max-height: 0;
     }
     .folder-notes li {
-      margin: 0.25rem 0;
+      margin: 0.125rem 0;
     }
     .folder-notes a {
       color: #4b5563;
       text-decoration: none;
       font-size: 0.875rem;
       display: block;
-      padding: 0.5rem;
+      padding: 0.375rem 0.5rem;
       border-radius: 0.375rem;
       transition: background-color 0.2s;
     }
@@ -724,7 +730,7 @@ function buildSite() {
       background: #f3f4f6;
       color: #1f2937;
     }
-    
+
     /* メインコンテンツ */
     main {
       margin-left: 280px;
@@ -738,7 +744,7 @@ function buildSite() {
       max-width: 1400px;
       margin: 0 auto;
     }
-    
+
     /* ページタイトル */
     .page-header {
       margin-bottom: 2rem;
@@ -752,11 +758,11 @@ function buildSite() {
     .page-header p {
       color: #6b7280;
     }
-    
+
     /* カードグリッド */
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 1.5rem;
     }
     .card {
@@ -764,16 +770,15 @@ function buildSite() {
       border: 1px solid #e5e7eb;
       border-radius: 0.75rem;
       overflow: hidden;
-      transition: all 0.2s;
-      cursor: pointer;
+      transition: box-shadow 0.2s, border-color 0.2s;
       display: flex;
       flex-direction: column;
       height: 200px;
+      text-decoration: none;
     }
     .card:hover {
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       border-color: #c7d2fe;
-      transform: translateY(-2px);
     }
     .card-thumbnail {
       width: 100%;
@@ -787,21 +792,20 @@ function buildSite() {
       height: 100%;
       object-fit: cover;
       opacity: 0.9;
-      transition: opacity 0.2s, transform 0.5s;
+      transition: opacity 0.2s;
     }
     .card:hover .card-thumbnail img {
       opacity: 1;
-      transform: scale(1.05);
     }
     .card-body {
-      padding: 1rem;
+      padding: 0.875rem;
       display: flex;
       flex-direction: column;
       flex: 1;
       min-height: 0;
     }
     .card-title {
-      font-size: 1rem;
+      font-size: 0.9375rem;
       font-weight: 600;
       color: #1f2937;
       margin-bottom: 0.5rem;
@@ -812,12 +816,13 @@ function buildSite() {
       -webkit-box-orient: vertical;
       line-height: 1.4;
       transition: color 0.2s;
+      text-decoration: none;
     }
     .card:hover .card-title {
       color: #4f46e5;
     }
     .card-snippet {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: #6b7280;
       line-height: 1.5;
       overflow: hidden;
@@ -825,13 +830,11 @@ function buildSite() {
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
+      text-decoration: none;
     }
-    
+
     /* レスポンシブ */
     @media (max-width: 768px) {
-      .menu-button {
-        display: block;
-      }
       .sidebar {
         transform: translateX(-100%);
         z-index: 90;
@@ -847,8 +850,8 @@ function buildSite() {
         gap: 1rem;
       }
     }
-    
-    /* オーバーレイ（モバイル時） */
+
+    /* オーバーレイ */
     .overlay {
       display: none;
       position: fixed;
@@ -933,36 +936,43 @@ function buildSite() {
     </div>
   </main>
 
-  <script>
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.querySelector('.overlay');
-      
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const main = document.getElementById('main');
+    const overlay = document.querySelector('.overlay');
+    
+    sidebar.classList.toggle('closed');
+    main.classList.toggle('expanded');
+    
+    // モバイル時のみオーバーレイ表示
+    if (window.innerWidth <= 768) {
       sidebar.classList.toggle('open');
       overlay.classList.toggle('show');
     }
+  }
+  
+  function toggleFolder(header) {
+    const icon = header.querySelector('.folder-icon');
+    const notesList = header.nextElementSibling;
     
-    function toggleFolder(header) {
-      const icon = header.querySelector('.folder-icon');
-      const notesList = header.nextElementSibling;
-      
-      icon.classList.toggle('collapsed');
-      notesList.classList.toggle('collapsed');
+    icon.classList.toggle('collapsed');
+    notesList.classList.toggle('collapsed');
+  }
+  
+  // デスクトップではサイドバー開閉、モバイルではオーバーレイ制御
+  function handleResize() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.overlay');
+    
+    if (window.innerWidth > 768) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
     }
-    
-    // デスクトップではサイドバー常時表示
-    function handleResize() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.querySelector('.overlay');
-      
-      if (window.innerWidth > 768) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('show');
-      }
-    }
-    
-    window.addEventListener('resize', handleResize);
-  </script>
+  }
+  
+  window.addEventListener('resize', handleResize);
+</script>
 </body>
 </html>`;
 
