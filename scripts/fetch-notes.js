@@ -76,6 +76,7 @@ async function fetchNotes() {
   const newPublishStates = {}; // 追加
   const currentNoteIds = new Set();
   const processedPaths = new Map(); // path -> noteId のマッピング
+  const skippedPublishedPaths = []; // スキップされた公開ノートのパス
   
   let hasMore = true;
   let cursor = null;
@@ -118,21 +119,7 @@ async function fetchNotes() {
           
           // 前回 isPublished: true だった場合も、変更がないのでスキップ
           skippedCount++;
-          
-          // 既存のノートIDを記録
-          // path から noteId を推測するため、既存データから探す
-          const existingNote = Array.from(existingNotesMap.values()).find(n => {
-            // フォルダ名 + ファイル名でマッチング
-            const pathParts = filePath.split('/').filter(p => p);
-            const fileName = pathParts[pathParts.length - 1].replace('.md', '');
-            const folderName = pathParts.length > 1 ? pathParts[0] : null;
-            return n.id === fileName || n.id === n.id; // idが一致するものを探す
-          });
-          
-          if (existingNote) {
-            currentNoteIds.add(existingNote.id);
-            processedPaths.set(filePath, existingNote.id);
-          }
+          skippedPublishedPaths.push(filePath); // パスを記録
           
           // ハッシュと公開状態を保存
           newHashes[filePath] = contentHash;
@@ -221,16 +208,29 @@ async function fetchNotes() {
       cursor = response.result.cursor;
     }
 
-    // 変更がなかったノートを既存データから追加
-    existingNotesMap.forEach((existingNote, noteId) => {
-      // すでに処理済み（新規または変更あり）の場合はスキップ
-      if (notes.find(n => n.id === noteId)) {
-        return;
-      }
+    // スキップされた公開ノートを既存データから復元
+    skippedPublishedPaths.forEach(filePath => {
+      // パスからファイル名とフォルダ名を抽出
+      const pathParts = filePath.split('/').filter(p => p);
+      const fileName = pathParts[pathParts.length - 1].replace('.md', '');
+      const folderName = pathParts.length > 1 ? pathParts[0] : null;
       
-      // currentNoteIdsに含まれている（=Dropboxに存在し、変更なし）場合は追加
-      if (currentNoteIds.has(noteId)) {
-        notes.push(existingNote);
+      // 既存ノートから一致するものを探す
+      const existingNote = Array.from(existingNotesMap.values()).find(n => {
+        // ファイル名とフォルダ名が一致するか、IDが一致するかで判定
+        const fileNameMatches = n.id === fileName || n.title === fileName;
+        const folderMatches = n.folderName === folderName;
+        return fileNameMatches && folderMatches;
+      });
+      
+      if (existingNote) {
+        // すでに追加されていないか確認
+        if (!notes.find(n => n.id === existingNote.id)) {
+          notes.push(existingNote);
+          currentNoteIds.add(existingNote.id);
+        }
+      } else {
+        console.log(`⚠️  Warning: Could not find existing note for ${filePath}`);
       }
     });
 
