@@ -1148,12 +1148,6 @@ notes.forEach(note => {
     .page-header {
       margin-bottom: 2rem;
     }
-    .page-header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin-bottom: 0.5rem;
-    }
     .page-header p {
       color: #6b7280;
     }
@@ -1258,7 +1252,6 @@ notes.forEach(note => {
 
   <main id="main">
     <div class="page-header">
-      <h1>All Notes</h1>
       <p>${sortedNotes.length} notes published</p>
     </div>
     
