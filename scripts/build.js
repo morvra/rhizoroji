@@ -549,6 +549,59 @@ function buildSite() {
     fs.writeFileSync(`public/${note.id}.html`, html);
   });
   
+  // 作成日で降順ソート
+  const sortedNotes = [...notes].sort((a, b) => b.metadata.created - a.metadata.created);
+
+  // フォルダ構造を再構築
+  function buildFolderStructure(notes) {
+    const folders = new Map();
+    const rootNotes = [];
+    
+    notes.forEach(note => {
+      const folderName = note.folderName;
+      
+      if (folderName) {
+        // フォルダあり
+        if (!folders.has(folderName)) {
+          folders.set(folderName, []);
+        }
+        folders.get(folderName).push(note);
+      } else {
+        // フォルダなし（Root）
+        rootNotes.push(note);
+      }
+    });
+    
+    // フォルダをアルファベット順にソート
+    const sortedFolders = Array.from(folders.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, notes]) => ({ name, notes }));
+    
+    return { folders: sortedFolders, rootNotes };
+  }
+
+  const { folders: folderList, rootNotes } = buildFolderStructure(notes);
+
+  // スニペット抽出関数
+  function getSnippet(content) {
+    return content
+      .replace(/!\[.*?\]\(.*?\)/g, '')
+      .replace(/\[\[(.*?)\]\]/g, '$1')
+      .replace(/#{1,6}\s/g, '')
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(\*|_)(.*?)\1/g, '$2')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\n+/g, ' ')
+      .trim()
+      .slice(0, 120);
+  }
+
+  // サムネイル抽出関数
+  function getThumbnail(content) {
+    const match = content.match(/!\[.*?\]\((.*?)\)/);
+    return match ? match[1] : null;
+  }
+
   const indexHtml = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -556,28 +609,363 @@ function buildSite() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Digital Garden</title>
   <style>
-    body {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 0 20px;
-      font-family: system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    h1 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 1rem 0; }
-    a { color: #4f46e5; text-decoration: none; font-size: 1.1rem; }
-    a:hover { text-decoration: underline; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f9fafb;
+      color: #374151;
+    }
+    
+    /* ヘッダー */
+    header {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .site-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      text-decoration: none;
+    }
+    .menu-button {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      color: #6b7280;
+    }
+    
+    /* サイドバー */
+    .sidebar {
+      position: fixed;
+      top: 61px;
+      left: 0;
+      width: 280px;
+      height: calc(100vh - 61px);
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
+      padding: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+    .sidebar.closed {
+      transform: translateX(-100%);
+    }
+    
+    .folder-section {
+      margin-bottom: 1.5rem;
+    }
+    .folder-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+      padding: 0.25rem;
+      border-radius: 0.375rem;
+      transition: background-color 0.2s;
+    }
+    .folder-header:hover {
+      background: #f3f4f6;
+    }
+    .folder-icon {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+    }
+    .folder-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+    .folder-notes {
+      list-style: none;
+      max-height: 1000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .folder-notes.collapsed {
+      max-height: 0;
+    }
+    .folder-notes li {
+      margin: 0.25rem 0;
+    }
+    .folder-notes a {
+      color: #4b5563;
+      text-decoration: none;
+      font-size: 0.875rem;
+      display: block;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: background-color 0.2s;
+    }
+    .folder-notes a:hover {
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+    
+    /* メインコンテンツ */
+    main {
+      margin-left: 280px;
+      padding: 2rem;
+      transition: margin-left 0.3s ease;
+    }
+    main.expanded {
+      margin-left: 0;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* ページタイトル */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: #6b7280;
+    }
+    
+    /* カードグリッド */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 200px;
+    }
+    .card:hover {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      border-color: #c7d2fe;
+      transform: translateY(-2px);
+    }
+    .card-thumbnail {
+      width: 100%;
+      height: 80px;
+      background: #f3f4f6;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .card-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.9;
+      transition: opacity 0.2s, transform 0.5s;
+    }
+    .card:hover .card-thumbnail img {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    .card-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+      transition: color 0.2s;
+    }
+    .card:hover .card-title {
+      color: #4f46e5;
+    }
+    .card-snippet {
+      font-size: 0.875rem;
+      color: #6b7280;
+      line-height: 1.5;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      .menu-button {
+        display: block;
+      }
+      .sidebar {
+        transform: translateX(-100%);
+        z-index: 90;
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      main {
+        margin-left: 0;
+      }
+      .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+    }
+    
+    /* オーバーレイ（モバイル時） */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 61px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 80;
+    }
+    .overlay.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <h1>My Digital Garden 🌱</h1>
-  <ul>
-    ${notes.map(n => `<li><a href="${n.id}.html">${n.title}</a></li>`).join('')}
-  </ul>
+  <header>
+    <div class="header-content">
+      <button class="menu-button" onclick="toggleSidebar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </button>
+      <a href="/" class="site-title">My Digital Garden 🌱</a>
+      <div style="width: 24px;"></div>
+    </div>
+  </header>
+
+  <div class="overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    ${folderList.map(folder => `
+      <div class="folder-section">
+        <div class="folder-header" onclick="toggleFolder(this)">
+          <svg class="folder-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 12L10 8L6 4"/>
+          </svg>
+          <span>${folder.name}</span>
+        </div>
+        <ul class="folder-notes">
+          ${folder.notes.map(n => `<li><a href="${n.id}.html">${n.title}</a></li>`).join('')}
+        </ul>
+      </div>
+    `).join('')}
+    
+    ${rootNotes.length > 0 ? `
+      <div class="folder-section">
+        <ul class="folder-notes" style="max-height: none;">
+          ${rootNotes.map(n => `<li><a href="${n.id}.html">${n.title}</a></li>`).join('')}
+        </ul>
+      </div>
+    ` : ''}
+  </aside>
+
+  <main id="main">
+    <div class="container">
+      <div class="page-header">
+        <h1>All Notes</h1>
+        <p>${sortedNotes.length} notes published</p>
+      </div>
+      
+      <div class="cards-grid">
+        ${sortedNotes.map(note => {
+          const thumbnail = getThumbnail(note.content);
+          const snippet = getSnippet(note.content);
+          
+          return `
+            <a href="${note.id}.html" class="card">
+              ${thumbnail ? `
+                <div class="card-thumbnail">
+                  <img src="${thumbnail}" alt="${note.title}" loading="lazy">
+                </div>
+              ` : ''}
+              <div class="card-body">
+                <div class="card-title">${note.title}</div>
+                <div class="card-snippet">${snippet || '<em style="opacity: 0.5;">No content</em>'}</div>
+              </div>
+            </a>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.overlay');
+      
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    
+    function toggleFolder(header) {
+      const icon = header.querySelector('.folder-icon');
+      const notesList = header.nextElementSibling;
+      
+      icon.classList.toggle('collapsed');
+      notesList.classList.toggle('collapsed');
+    }
+    
+    // デスクトップではサイドバー常時表示
+    function handleResize() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.overlay');
+      
+      if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      }
+    }
+    
+    window.addEventListener('resize', handleResize);
+  </script>
 </body>
 </html>`;
-  
+
   fs.writeFileSync('public/index.html', indexHtml);
   
   console.log(`✅ Built ${notes.length} pages`);

@@ -82,10 +82,15 @@ async function fetchPublishedNotes() {
         
         // isPublished が true のものだけ
         if (metadata.isPublished === true) {
+          // パスからフォルダ名を取得（最初のフォルダのみ）
+          const pathParts = entry.path_lower.split('/').filter(p => p);
+          const folderName = pathParts.length > 1 ? pathParts[0] : null;
+          
           publishedNotes.push({
             id: metadata.id,
             title: metadata.title || entry.name.replace('.md', ''),
             content: content,
+            folderName: folderName,
             metadata: metadata
           });
           console.log(`  → Published: ${metadata.title || entry.name}`);
