@@ -530,6 +530,27 @@ function generateCommonHTML(currentNoteId = null) {
         font-family: system-ui, -apple-system, sans-serif;
         background: #f9fafb;
         color: #374151;
+        scrollbar-gutter: stable;
+      }
+      
+      /* スクロールバーのスタイル統一 */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db transparent;
       }
       
       /* ヘッダー */
@@ -593,6 +614,7 @@ function generateCommonHTML(currentNoteId = null) {
         background: white;
         border-right: 1px solid #e5e7eb;
         overflow-y: auto;
+        scrollbar-gutter: stable;
         padding: 1rem 0;
         transition: transform 0.3s ease;
       }
