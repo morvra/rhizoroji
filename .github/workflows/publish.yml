@@ -2,18 +2,17 @@ name: Publish Notes
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # 毎日午前0時（UTC）に実行
+  workflow_dispatch:      # 手動実行も可能
 
 permissions:
   contents: write
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
       
       - name: Setup Node.js
@@ -21,20 +20,38 @@ jobs:
         with:
           node-version: '18'
       
+      # ビルドキャッシュの復元
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        id: cache-restore
+        with:
+          path: data/build-cache.json
+          key: rhizoroji-cache-${{ github.sha }}
+          restore-keys: |
+            rhizoroji-cache-
+      
       - name: Install dependencies
         run: npm install
       
       - name: Fetch notes from Dropbox
         env:
-          DROPBOX_ACCESS_TOKEN: ${{ secrets.DROPBOX_ACCESS_TOKEN }}
           DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
         run: node scripts/fetch-notes.js
       
       - name: Build static site
-        run: npm run build
+        run: node scripts/build.js
+      
+      # ビルドキャッシュの保存（常に保存、失敗時も）
+      - name: Save build cache
+        uses: actions/cache/save@v3
+        if: always()
+        with:
+          path: data/build-cache.json
+          key: rhizoroji-cache-${{ github.run_id }}-${{ github.run_attempt }}
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
+          force_orphan: true
