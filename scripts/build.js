@@ -467,7 +467,6 @@ function generateCommonHTML(currentNoteId = null) {
       </header>
       <div class="overlay" onclick="toggleSidebar()"></div>
 `,
-    `,
     sidebar: `
       <aside class="sidebar" id="sidebar">
         ${folderList.map(folder => `
