@@ -927,9 +927,25 @@ function generateCommonHTML(currentNoteId = null) {
       
       function highlightText(text, query) {
         if (!query) return escapeHtml(text);
-        const escapedQuery = query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-        const regex = new RegExp('(' + escapedQuery + ')', 'gi');
-        return escapeHtml(text).replace(regex, '<span class="search-result-highlight">$1</span>');
+        const escapedText = escapeHtml(text);
+        const parts = [];
+        let remaining = escapedText;
+        let lowerRemaining = remaining.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        
+        while (true) {
+          const index = lowerRemaining.indexOf(lowerQuery);
+          if (index === -1) {
+            parts.push(remaining);
+            break;
+          }
+          parts.push(remaining.slice(0, index));
+          parts.push('<span class="search-result-highlight">' + remaining.slice(index, index + query.length) + '</span>');
+          remaining = remaining.slice(index + query.length);
+          lowerRemaining = remaining.toLowerCase();
+        }
+        
+        return parts.join('');
       }
       
       function performSearch(query) {
