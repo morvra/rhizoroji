@@ -114,7 +114,7 @@ function renderMarkdownToHTML(content, allNotes) {
   html = html.replace(/\[\[(.*?)\]\]/g, (match, title) => {
     const target = allNotes.find(n => n.title === title);
     return target 
-      ? `<a href="${target.id}.html" class="wiki-link">[[${title}]]</a>`
+      ? `<a href="${target.id}.html" class="wiki-link">${title}</a>`
       : title;
   });
 
@@ -475,14 +475,39 @@ function generateCommonHTML(currentNoteId = null) {
             </svg>
           </button>
           <a href="index.html" class="site-title">🍵Rhizoroji</a>
-          <button class="random-button" onclick="openRandomNote()" title="Random Note">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-            </svg>
-          </button>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="search-button" onclick="toggleSearch()" title="Search (Ctrl+K)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+              </svg>
+            </button>
+            <button class="random-button" onclick="openRandomNote()" title="Random Note">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
       <div class="overlay" onclick="toggleSidebar()"></div>
+      <div class="search-modal" id="searchModal" onclick="closeSearchOnOverlay(event)">
+        <div class="search-modal-content">
+          <div class="search-input-wrapper">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search notes..." autocomplete="off">
+            <button class="search-close" onclick="toggleSearch()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+      </div>
 `,
     sidebar: `
       <aside class="sidebar" id="sidebar">
@@ -591,6 +616,118 @@ function generateCommonHTML(currentNoteId = null) {
       }
       .random-button:hover {
         color: #4f46e5;
+      }
+      .search-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: #6b7280;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .search-button:hover {
+        color: #4f46e5;
+      }
+      
+      /* 検索モーダル */
+      .search-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 200;
+        padding: 2rem;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 10vh;
+      }
+      .search-modal.show {
+        display: flex;
+      }
+      .search-modal-content {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        width: 100%;
+        max-width: 600px;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .search-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .search-input-wrapper svg:first-child {
+        color: #9ca3af;
+        flex-shrink: 0;
+      }
+      .search-input-wrapper input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 1rem;
+        color: #1f2937;
+      }
+      .search-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        transition: color 0.2s;
+      }
+      .search-close:hover {
+        color: #1f2937;
+      }
+      .search-results {
+        overflow-y: auto;
+        max-height: calc(70vh - 4rem);
+      }
+      .search-result-item {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+      }
+      .search-result-item:hover {
+        background: #f9fafb;
+      }
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+      .search-result-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+      }
+      .search-result-snippet {
+        font-size: 0.875rem;
+        color: #6b7280;
+        line-height: 1.4;
+      }
+      .search-result-highlight {
+        background: #fef3c7;
+        font-weight: 500;
+        color: #92400e;
+      }
+      .search-no-results {
+        padding: 2rem;
+        text-align: center;
+        color: #9ca3af;
       }
       
       /* サイドバー */
@@ -718,6 +855,11 @@ function generateCommonHTML(currentNoteId = null) {
     `,
     scripts: `
       const allNoteIds = ${JSON.stringify(notes.map(n => n.id))};
+      const allNotes = ${JSON.stringify(notes.map(n => ({
+        id: n.id,
+        title: n.title,
+        content: n.content
+      })))};
       
       function openRandomNote() {
         const randomId = allNoteIds[Math.floor(Math.random() * allNoteIds.length)];
@@ -755,6 +897,112 @@ function generateCommonHTML(currentNoteId = null) {
           overlay.classList.remove('show');
         }
       }
+      
+      function toggleSearch() {
+        const modal = document.getElementById('searchModal');
+        const input = document.getElementById('searchInput');
+        const isOpen = modal.classList.contains('show');
+        
+        if (isOpen) {
+          modal.classList.remove('show');
+          input.value = '';
+          document.getElementById('searchResults').innerHTML = '';
+        } else {
+          modal.classList.add('show');
+          setTimeout(() => input.focus(), 100);
+        }
+      }
+      
+      function closeSearchOnOverlay(event) {
+        if (event.target.id === 'searchModal') {
+          toggleSearch();
+        }
+      }
+      
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      function highlightText(text, query) {
+        if (!query) return escapeHtml(text);
+        const regex = new RegExp(\`(\${query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})\`, 'gi');
+        return escapeHtml(text).replace(regex, '<span class="search-result-highlight">$1</span>');
+      }
+      
+      function performSearch(query) {
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (!query.trim()) {
+          resultsDiv.innerHTML = '';
+          return;
+        }
+        
+        const lowerQuery = query.toLowerCase();
+        const results = allNotes
+          .filter(note => {
+            const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+            const contentMatch = note.content.toLowerCase().includes(lowerQuery);
+            return titleMatch || contentMatch;
+          })
+          .map(note => {
+            const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+            let snippet = note.content
+              .replace(/!\[.*?\]\(.*?\)/g, '')
+              .replace(/\[\[(.*?)\]\]/g, '$1')
+              .replace(/#{1,6}\s/g, '')
+              .replace(/\n+/g, ' ')
+              .trim();
+            
+            if (!titleMatch) {
+              const index = snippet.toLowerCase().indexOf(lowerQuery);
+              const start = Math.max(0, index - 60);
+              const end = Math.min(snippet.length, index + query.length + 60);
+              snippet = (start > 0 ? '...' : '') + snippet.slice(start, end) + (end < snippet.length ? '...' : '');
+            } else {
+              snippet = snippet.slice(0, 120);
+            }
+            
+            return { ...note, snippet };
+          })
+          .slice(0, 50);
+        
+        if (results.length === 0) {
+          resultsDiv.innerHTML = '<div class="search-no-results">No results found</div>';
+          return;
+        }
+        
+        resultsDiv.innerHTML = results.map(result => \`
+          <a href="\${result.id}.html" class="search-result-item">
+            <div class="search-result-title">\${highlightText(result.title, query)}</div>
+            <div class="search-result-snippet">\${highlightText(result.snippet, query)}</div>
+          </a>
+        \`).join('');
+      }
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            performSearch(e.target.value);
+          });
+        }
+        
+        // Ctrl+K or Cmd+K でサーチを開く
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            toggleSearch();
+          }
+          if (e.key === 'Escape') {
+            const modal = document.getElementById('searchModal');
+            if (modal.classList.contains('show')) {
+              toggleSearch();
+            }
+          }
+        });
+      });
       
       window.addEventListener('resize', handleResize);
     `
