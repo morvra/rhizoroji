@@ -651,7 +651,6 @@ function generateCommonHTML(currentNoteId = null) {
       }
       .search-modal-content {
         background: white;
-        border-radius: 0.75rem;
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         width: 100%;
         max-width: 600px;
@@ -664,7 +663,6 @@ function generateCommonHTML(currentNoteId = null) {
         align-items: center;
         gap: 0.75rem;
         padding: 1rem 1.25rem;
-        border-bottom: 1px solid #e5e7eb;
       }
       .search-input-wrapper svg:first-child {
         color: #9ca3af;
