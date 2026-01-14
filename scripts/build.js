@@ -114,7 +114,7 @@ function renderMarkdownToHTML(content, allNotes) {
   html = html.replace(/\[\[(.*?)\]\]/g, (match, title) => {
     const target = allNotes.find(n => n.title === title);
     return target 
-      ? `<a href="${target.id}.html" class="wiki-link">${title}</a>`
+      ? `<a href="${target.id}.html" class="wiki-link">[[${title}]]</a>`
       : title;
   });
 
@@ -965,18 +965,44 @@ function generateCommonHTML(currentNoteId = null) {
           })
           .map(note => {
             const titleMatch = note.title.toLowerCase().includes(lowerQuery);
-            let snippet = note.content
-              .replace(/!\[.*?\]\(.*?\)/g, '')
-              .replace(/\[\[(.*?)\]\]/g, '$1')
-              .replace(/#{1,6}\s/g, '')
-              .replace(/\n+/g, ' ')
-              .trim();
+            let snippet = note.content;
+            
+            // 画像を削除
+            while (snippet.includes('![')) {
+              const start = snippet.indexOf('![');
+              const end = snippet.indexOf(')', start);
+              if (end === -1) break;
+              snippet = snippet.slice(0, start) + snippet.slice(end + 1);
+            }
+            
+            // Wikiリンクをテキストに置換
+            while (snippet.includes('[[')) {
+              const start = snippet.indexOf('[[');
+              const end = snippet.indexOf(']]', start);
+              if (end === -1) break;
+              const title = snippet.slice(start + 2, end);
+              snippet = snippet.slice(0, start) + title + snippet.slice(end + 2);
+            }
+            
+            // 改行や特殊文字をスペースに置換
+            snippet = snippet.split('').map(c => {
+              if (c === '#' || c.charCodeAt(0) === 10 || c.charCodeAt(0) === 13 || c.charCodeAt(0) === 9) {
+                return ' ';
+              }
+              return c;
+            }).join('');
+            
+            // 連続スペースを1つに
+            const words = snippet.split(' ').filter(w => w.length > 0);
+            snippet = words.join(' ');
             
             if (!titleMatch) {
               const index = snippet.toLowerCase().indexOf(lowerQuery);
-              const start = Math.max(0, index - 60);
-              const end = Math.min(snippet.length, index + query.length + 60);
-              snippet = (start > 0 ? '...' : '') + snippet.slice(start, end) + (end < snippet.length ? '...' : '');
+              if (index >= 0) {
+                const start = Math.max(0, index - 60);
+                const end = Math.min(snippet.length, index + query.length + 60);
+                snippet = (start > 0 ? '...' : '') + snippet.slice(start, end) + (end < snippet.length ? '...' : '');
+              }
             } else {
               snippet = snippet.slice(0, 120);
             }
