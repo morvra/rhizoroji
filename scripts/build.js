@@ -927,7 +927,8 @@ function generateCommonHTML(currentNoteId = null) {
       
       function highlightText(text, query) {
         if (!query) return escapeHtml(text);
-        const regex = new RegExp(\`(\${query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})\`, 'gi');
+        const escapedQuery = query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+        const regex = new RegExp('(' + escapedQuery + ')', 'gi');
         return escapeHtml(text).replace(regex, '<span class="search-result-highlight">$1</span>');
       }
       
@@ -973,12 +974,12 @@ function generateCommonHTML(currentNoteId = null) {
           return;
         }
         
-        resultsDiv.innerHTML = results.map(result => \`
-          <a href="\${result.id}.html" class="search-result-item">
-            <div class="search-result-title">\${highlightText(result.title, query)}</div>
-            <div class="search-result-snippet">\${highlightText(result.snippet, query)}</div>
-          </a>
-        \`).join('');
+        resultsDiv.innerHTML = results.map(result => 
+          '<a href="' + result.id + '.html" class="search-result-item">' +
+            '<div class="search-result-title">' + highlightText(result.title, query) + '</div>' +
+            '<div class="search-result-snippet">' + highlightText(result.snippet, query) + '</div>' +
+          '</a>'
+        ).join('');
       }
       
       document.addEventListener('DOMContentLoaded', () => {
