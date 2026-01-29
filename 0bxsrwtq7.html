@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公開ノートテスト - Rhizoroji</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>
+    (function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <style>
+    
+      :root {
+        --bg-primary: #f9fafb;
+        --bg-secondary: white;
+        --bg-tertiary: #f3f4f6;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --border-primary: #e5e7eb;
+        --border-secondary: #d1d5db;
+        --accent-primary: #4f46e5;
+        --accent-secondary: #7c3aed;
+        --link-color: #60a5fa;
+        --shadow-sm: rgba(0,0,0,0.05);
+        --shadow-md: rgba(0,0,0,0.1);
+        --code-bg: #1f2937;
+        --code-text: #e5e7eb;
+        --overlay-bg: rgba(0, 0, 0, 0.5);
+      }
+      
+      [data-theme="dark"] {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
+        --border-primary: #334155;
+        --border-secondary: #475569;
+        --accent-primary: #818cf8;
+        --accent-secondary: #a78bfa;
+        --link-color: #60a5fa;
+        --shadow-sm: rgba(0,0,0,0.3);
+        --shadow-md: rgba(0,0,0,0.5);
+        --code-bg: #0f172a;
+        --code-text: #cbd5e1;
+        --overlay-bg: rgba(0, 0, 0, 0.7);
+      }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        scrollbar-gutter: stable;
+      }
+      
+      /* スクロールバーのスタイル統一 */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-tertiary);
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-secondary) transparent;
+      }
+      
+      /* ヘッダー */
+      header {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-primary);
+        padding: .5rem 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 1px 3px var(--shadow-sm);
+      }
+      .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .site-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+      .site-title:hover {
+        text-decoration: none;
+      }
+      .menu-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: var(--text-secondary);
+        transition: color 0.2s;
+      }
+      .menu-button:hover {
+        color: var(--text-primary);
+      }
+      .theme-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: var(--text-secondary);
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+      .theme-toggle:hover {
+        color: var(--accent-primary);
+      }
+      .theme-toggle .sun-icon {
+        display: block;
+      }
+      .theme-toggle .moon-icon {
+        display: none;
+      }
+      [data-theme="dark"] .theme-toggle .sun-icon {
+        display: none;
+      }
+      [data-theme="dark"] .theme-toggle .moon-icon {
+        display: block;
+      }
+      .random-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: var(--text-secondary);
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .random-button:hover {
+        color: var(--accent-primary);
+      }
+      .search-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        color: var(--text-secondary);
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .search-button:hover {
+        color: var(--accent-primary);
+      }
+      
+      /* 検索モーダル */
+      .search-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--overlay-bg);
+        z-index: 200;
+        padding: 2rem;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 10vh;
+      }
+      .search-modal.show {
+        display: flex;
+      }
+      .search-modal-content {
+        background: var(--bg-secondary);
+        box-shadow: 0 10px 40px var(--shadow-md);
+        width: 100%;
+        max-width: 600px;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .search-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+      }
+      .search-input-wrapper svg:first-child {
+        color: var(--text-tertiary);
+        flex-shrink: 0;
+      }
+      .search-input-wrapper input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 1rem;
+        color: var(--text-primary);
+        background: transparent;
+      }
+      .search-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        transition: color 0.2s;
+      }
+      .search-close:hover {
+        color: var(--text-primary);
+      }
+      .search-results {
+        overflow-y: auto;
+        max-height: calc(70vh - 4rem);
+      }
+      .search-result-item {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid var(--border-primary);
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+      }
+      .search-result-item:hover {
+        background: var(--bg-tertiary);
+      }
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+      .search-result-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+      }
+      .search-result-snippet {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+      .search-result-highlight {
+        background: #fef3c7;
+        font-weight: 500;
+        color: #92400e;
+      }
+      [data-theme="dark"] .search-result-highlight {
+        background: #713f12;
+        color: #fef3c7;
+      }
+      .search-no-results {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-tertiary);
+      }
+      
+      /* サイドバー */
+      .sidebar {
+        position: fixed;
+        top: 61px;
+        left: 0;
+        width: 280px;
+        height: calc(100vh - 61px);
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border-primary);
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+        padding: 1rem 0;
+        transition: transform 0.3s ease;
+      }
+      .sidebar.closed {
+        transform: translateX(-100%);
+      }
+      
+      .folder-section {
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-primary);
+      }
+      .folder-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        user-select: none;
+        padding: 0.3rem;
+        transition: background-color 0.2s;
+      }
+      .folder-header:hover {
+        background: var(--bg-tertiary);
+      }
+      .folder-icon {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+        color: var(--text-secondary);
+        transform: rotate(90deg);
+      }
+      .folder-icon.collapsed {
+        transform: rotate(0deg);
+      }
+      .folder-notes {
+        list-style: none;
+        max-height: 1000px;
+        padding-left: 0;
+        margin: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .folder-notes.collapsed {
+        max-height: 0;
+      }
+      .folder-notes li {
+        margin: 0;
+        padding: 0;
+      }
+      .folder-notes a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        display: block;
+        padding: 0.375rem 0.5rem;
+        transition: background-color 0.2s;
+      }
+      .folder-notes a:hover {
+        text-decoration: none;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+      .folder-notes a.active {
+        background: var(--bg-tertiary);
+        color: var(--accent-primary);
+        font-weight: 600;
+      }
+      
+      /* メインコンテンツ */
+      main {
+        margin-left: 280px;
+        padding: 1rem;
+        transition: margin-left 0.3s ease;
+      }
+      main.expanded {
+        margin-left: 0;
+      }
+      
+      /* オーバーレイ */
+      .overlay {
+        display: none;
+        position: fixed;
+        top: 61px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--overlay-bg);
+        z-index: 80;
+      }
+      .overlay.show {
+        display: block;
+      }
+      
+      /* レスポンシブ */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+          z-index: 90;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        main {
+          margin-left: 0;
+        }
+      }
+    
+    
+    .article-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--bg-secondary);
+      padding: 2rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px var(--shadow-sm);
+    }
+    a { 
+      color: var(--link-color); 
+      text-decoration: none; 
+    }
+    a:hover { 
+      text-decoration: underline; 
+    }
+    .wiki-link {
+      color: var(--accent-secondary);
+      font-weight: 500;
+    }
+    h1 { 
+      border-bottom: 2px solid var(--border-primary); 
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    .meta {
+      display: flex;
+      gap: 1.5rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .meta-item svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    h2 { 
+      margin-top: 2rem;
+      color: var(--text-primary);
+    }
+    h3 {
+      margin-top: 1.5rem;
+      color: var(--text-primary);
+    }
+    blockquote {
+      border-left: 4px solid var(--border-secondary);
+      padding-left: 1rem;
+      margin: 0;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 0.75rem 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+    code {
+      background: var(--bg-tertiary);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: var(--text-primary);
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+    }
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.75rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border-primary);
+      padding: 0.5rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    td {
+      color: var(--text-primary);
+    }
+    ul, ol {
+      margin: 0;
+      padding-left: 2rem;
+    }
+    ul ul, ol ol, ul ol, ol ul {
+      margin: 0.25rem 0;
+    }
+    .task-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .task-list li {
+      margin: 0.25rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .task-icon {
+      flex-shrink: 0;
+      margin-top: 0.25rem;
+    }
+    .task-list li.done {
+      color: var(--text-tertiary);
+    }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-primary);
+      margin: 1.5rem 0;
+    }
+    .related { 
+      margin-top: 3rem; 
+      padding-top: 1.5rem; 
+      border-top: 1px solid var(--border-primary); 
+    }
+    .related h2 { 
+      font-size: 1.1rem; 
+      color: var(--text-secondary);
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .related-card {
+      display: block;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .related-card:hover {
+      background: var(--bg-secondary);
+      box-shadow: 0 2px 8px var(--shadow-sm);
+      border-color: var(--accent-primary);
+      text-decoration: none;
+    }
+    .related-card-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      display: block;
+      margin-bottom: 0.5rem;
+      text-decoration: none;
+    }
+    .related-card:hover .related-card-title {
+      color: var(--accent-primary);
+    }
+    .related-card-snippet {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hub-section {
+      margin-bottom: 2rem;
+    }
+    .hub-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    .hub-title svg {
+      opacity: 0.5;
+    }
+    .hub-title a {
+      color: var(--accent-secondary);
+      text-decoration: none;
+    }
+    .hub-title a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  
+      <header>
+        <div class="header-content">
+          <button class="menu-button" onclick="toggleSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
+          </button>
+          <a href="index.html" class="site-title">🍵Rhizoroji</a>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+              <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+            <button class="search-button" onclick="toggleSearch()" title="Search (Ctrl+K)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+              </svg>
+            </button>
+            <button class="random-button" onclick="openRandomNote()" title="Random Note">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+      <div class="overlay" onclick="toggleSidebar()"></div>
+      <div class="search-modal" id="searchModal" onclick="closeSearchOnOverlay(event)">
+        <div class="search-modal-content">
+          <div class="search-input-wrapper">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search notes..." autocomplete="off">
+            <button class="search-close" onclick="toggleSearch()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+      </div>
+
+  
+      <aside class="sidebar" id="sidebar">
+        
+          <div class="folder-section">
+            <div class="folder-header" onclick="toggleFolder(this)">
+              <svg class="folder-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M6 4L12 8L6 12V4Z"/>
+              </svg>
+              <span>Rhizoroji</span>
+            </div>
+            <ul class="folder-notes">
+              <li><a href="ro6wgwyp5.html" >morvra</a></li><li><a href="w8wi7v6mk.html" >About</a></li>
+            </ul>
+          </div>
+        
+        
+        
+          <div class="folder-section">
+            <ul class="folder-notes" style="max-height: none;">
+              <li><a href="oiqsfatz9.html" >Rhizonoteの中身を公開するとしたら</a></li><li><a href="qlsszbs3s.html" >デジタルガーデン</a></li><li><a href="acwtu54ko.html" >バイブコーディングの積み重ねの無さ</a></li><li><a href="46v5b4540.html" >バイブコーディング</a></li><li><a href="25rv5jzih.html" >ブラケティング</a></li><li><a href="0bxsrwtq7.html" class="active">公開ノートテスト</a></li><li><a href="131b86ylu.html" >発見とは何か</a></li><li><a href="ocfy7d50j.html" >豆論文</a></li><li><a href="yf1tjfu4q.html" >カードには一つの事柄についてのみ書く</a></li><li><a href="qq45xu1zm.html" >Rhizonote</a></li><li><a href="alqrlvr9c.html" >B-TRON</a></li><li><a href="ehecwyi0n.html" >手動で直したいときのプロンプト</a></li><li><a href="kz3v7rbeb.html" >Rhizonoteの参考資料</a></li><li><a href="7reyskvdg.html" >スライドカーソル</a></li><li><a href="d0sdxq1tt.html" >公開済みノートだけを絞り込みできるようにした</a></li><li><a href="llfaalsug.html" >d-PoIC</a></li><li><a href="4eh76llyh.html" >八方思案</a></li><li><a href="8l8l4j3i1.html" >PoIC</a></li><li><a href="mm6bz0fez.html" >思ったことは発見ではない</a></li><li><a href="3gdm4pq1z.html" >知的生産</a></li><li><a href="utpy3yn1b.html" >Rhizoroji</a></li><li><a href="8od589kc8.html" >Wiki</a></li><li><a href="6bhagfw5v.html" >Rhizonoteは自分Wikiとして使う</a></li><li><a href="h02t7flb2.html" >無の会話</a></li>
+            </ul>
+          </div>
+        
+      </aside>
+    
+  
+  <main id="main">
+    <div class="article-container">
+      <h1>公開ノートテスト</h1>
+      <div class="meta">
+        <div class="meta-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor">
+            <rect x="3" y="4" width="10" height="9" rx="1" stroke-width="1.5"/>
+            <path d="M5 4V2.5M11 4V2.5M3 7H13" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>2026-01-12</span>
+        </div>
+        <div class="meta-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor">
+            <path d="M8 14A6 6 0 108 2a6 6 0 000 12z" stroke-width="1.5"/>
+            <path d="M8 5v3l2 2" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>2026-01-13</span>
+        </div>
+      </div>
+      <div class="content">
+        このノートが公開されていたらOKなんだけど。<br><br>公開リンク → <a href="qq45xu1zm.html" class="wiki-link">[[Rhizonote]]</a><br><br>非公開リンク → Rhizonote開発ログ<br><br>公開できた！<br><br>DropboxAPIの仕様がいまいちわからんくて認証切れないか不安だけど、公開できたのはめっちゃウレシイ！<br><br>実装までの道筋はClaudeにRhizonoteのリポジトリを読み込ませてこっちでやるべき作業やコードを教えてもらった。<br><br>▼画像テスト<br><img src="https://gyazo.com/0c6e1c8590cd6c419be4b63627f50dd3/thumb/800" alt=""><br>
+      </div>
+      
+      
+        <div class="related">
+          
+            <h2>Direct References</h2>
+            <div class="related-grid">
+              
+                <a href="qq45xu1zm.html" class="related-card">
+                  <div class="related-card-title">Rhizonote</div>
+                  <div class="related-card-snippet">- [Rhizonote](https://morvra.github.io/rhizonote/) 自作のMarkDownエディタ。 ブラウザで動くObsidian的なものがほしかったのがきっかけで開発を始めた。 おもにGoogleAIS</div>
+                </a>
+              
+            </div>
+          
+          
+          
+            <h2>Related via...</h2>
+            
+              <div class="hub-section">
+                <div class="hub-title">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 3v10M3 8h10M5 5l6 6M11 5l-6 6"/>
+                  </svg>
+                  <a href="qq45xu1zm.html">Rhizonote</a>
+                </div>
+                <div class="related-grid">
+                  
+                    <a href="46v5b4540.html" class="related-card">
+                      <div class="related-card-title">バイブコーディング</div>
+                      <div class="related-card-snippet">バイブコーディング（Vibe Coding） AIと共同で開発する際、ユーザーがふわっとした（バイブス重視の）指示でもAIが実行可能なコードに変換してくれる様からこのような言葉になった（多分） - [バイブコーディングとは| IBM](ht</div>
+                    </a>
+                  
+                    <a href="oiqsfatz9.html" class="related-card">
+                      <div class="related-card-title">Rhizonoteの中身を公開するとしたら</div>
+                      <div class="related-card-snippet">仕組みを夢想する。デジタルガーデンの思想的には他者に開かれてるのがデフォ。 まず、RhizonoteでノートごとにPublishパラメータをオンする （ノート情報のiアイコンの横にオンオフ切り替えボタンを作成する。デフォルトではオフ）この機</div>
+                    </a>
+                  
+                    <a href="25rv5jzih.html" class="related-card">
+                      <div class="related-card-title">ブラケティング</div>
+                      <div class="related-card-snippet">Cosense（Scrapbox）で生まれた、角括弧でリンク化することをさす言葉。 参考 - [ブラケティング - Cosense ヘルプ](https://scrapbox.io/help-jp/%E3%83%96%E3%83%A9%E3</div>
+                    </a>
+                  
+                    <a href="kz3v7rbeb.html" class="related-card">
+                      <div class="related-card-title">Rhizonoteの参考資料</div>
+                      <div class="related-card-snippet">Rhizonoteを開発するうえで参考になりそうなものを集める - Cosense, Obsidian関連のページはそのまま使えることが多そう - ブラケティング - デジタルガーデン - B-TRON - [Linking Your Th</div>
+                    </a>
+                  
+                    <a href="7reyskvdg.html" class="related-card">
+                      <div class="related-card-title">スライドカーソル</div>
+                      <div class="related-card-snippet">エディタやキーボードアプリの、スワイプでカーソルを移動させる機能。 単純に便利だし、何も書いてない時の手慰みにもなってよい。 Rhizonoteにも採用している。</div>
+                    </a>
+                  
+                    <a href="ro6wgwyp5.html" class="related-card">
+                      <div class="related-card-title">morvra</div>
+                      <div class="related-card-snippet">「もーぶら」と読む。ハンドルネーム。 個人サイト - [morvra lists](https://morvra.github.io/) 自作ツール - Rhizonote - d-PoIC   - [CardBoard](https://</div>
+                    </a>
+                  
+                    <a href="w8wi7v6mk.html" class="related-card">
+                      <div class="related-card-title">About</div>
+                      <div class="related-card-snippet">Rhizorojiはmorvraが自作のノートアプリRhizonoteで書いた思考の断片を、公開・共有するための場所です。 コンセプト：Rhizome × 露地 名前の由来は、生物学的な「地下茎（Rhizome）」と、茶庭における「露地（R</div>
+                    </a>
+                  
+                    <a href="utpy3yn1b.html" class="related-card">
+                      <div class="related-card-title">Rhizoroji</div>
+                      <div class="related-card-snippet">自作ノートアプリ、Rhizonoteに書いたノートを公開する場所。 - [Rhizoroji](https://morvra.github.io/rhizoroji/) 名前の由来はRhizome + 露地。詳しくはAboutで。</div>
+                    </a>
+                  
+                    <a href="6bhagfw5v.html" class="related-card">
+                      <div class="related-card-title">Rhizonoteは自分Wikiとして使う</div>
+                      <div class="related-card-snippet">WorkflowyとRhizonoteの使い分けを考えていて、「Rhizonoteは自分Wikiとして使うくらいの距離感がいい」かもという結論に至った。 デイリーノートは一旦おやすみ。</div>
+                    </a>
+                  
+                </div>
+              </div>
+            
+          
+        </div>
+        
+    </div>
+  </main>
+  
+  <script>
+    
+      const allNoteIds = ["oiqsfatz9","qlsszbs3s","acwtu54ko","46v5b4540","25rv5jzih","0bxsrwtq7","131b86ylu","ocfy7d50j","yf1tjfu4q","qq45xu1zm","alqrlvr9c","ehecwyi0n","kz3v7rbeb","7reyskvdg","d0sdxq1tt","llfaalsug","ro6wgwyp5","4eh76llyh","8l8l4j3i1","mm6bz0fez","3gdm4pq1z","w8wi7v6mk","utpy3yn1b","8od589kc8","6bhagfw5v","h02t7flb2"];
+      const allNotes = [{"id":"oiqsfatz9","title":"Rhizonoteの中身を公開するとしたら","content":"仕組みを夢想する。[[デジタルガーデン]]の思想的には他者に開かれてるのがデフォ。\n\nまず、[[Rhizonote]]でノートごとにPublishパラメータをオンする\n（ノート情報のiアイコンの横にオンオフ切り替えボタンを作成する。デフォルトではオフ）この機能は基本的には開発者用でオプションでそもそも表示させないのをデフォにしとく。\n\nそして、GitHubActionsでDropboxAPIを叩いて Publish がオンになっているノートだけをMarkdownファイルとしてGithubにアップする。毎日定時でチェック。\n\nそれをGithubPagesで公開する。デザインは基本的にRhizonote準拠で、ノートはHTMLとして読めるようになっていて、Wikiリンクも普通に動く。ノート本文の下部に関連リンクが並んでいる。サイドバーには公開済みページが並んでいる（BookmarkやフォルダもRhizonoteと同じ）。いわばプレビュー状態だけのRhizonote的な見た目。\n\nちなみに非公開ノートへのリンクは素のテキストとして表示される。\n"},{"id":"qlsszbs3s","title":"デジタルガーデン","content":"自身の著述を公開する際に、ブログ的な時系列順に並ぶPostの羅列から離れ、未完成で内部リンクが張り巡らされた個人のWikiのようなサイトとして公開する形態・概念。\n\n探索可能な空間の中で時間をかけて個人の知識を蓄積していくもの。\n\nTwitter(X)等SNSの隆盛（というか一般化）によって情報洪水に流されがちな昨今、そこへのカウンターとしてスロウなWebの在り方を志向する潮流の一部と理解している。\n\n参考リンク\n- [A Brief History & Ethos of the Digital Garden](https://maggieappleton.com/garden-history)\n- [🌱 My blog is a digital garden, not a blog](https://joelhooks.com/digital-garden/)"},{"id":"acwtu54ko","title":"バイブコーディングの積み重ねの無さ","content":"GoogleAIStudioやClaudeにめちゃくちゃ頼って[[バイブコーディング]]でツールを作って遊んでいる。\n\nプロンプトの作り方やエラーの修正依頼の手順などは多少上手く(？)なってる感あるんだけど、いかんせんコードの中身について理解が及ばず、時間を消費してる感触がある。もちろん単なる消費とは思ってないんだけど、コピペに頼りつつ自分でコード書いてた時より身になってないと感じる。"},{"id":"46v5b4540","title":"バイブコーディング","content":"バイブコーディング（Vibe Coding）\n\nAIと共同で開発する際、ユーザーがふわっとした（バイブス重視の）指示でもAIが実行可能なコードに変換してくれる様からこのような言葉になった（多分）\n\n- [バイブコーディングとは| IBM](https://www.ibm.com/jp-ja/think/topics/vibe-coding)\n> バイブコーディングは、ユーザーが平易な音声を使用して意図を表現し、AIがその思考を実行可能なコードに変換する、コーディングにおける新たな試みです。バイブコーディングの目標は、AIエージェントがコーディング・アシスタントとして機能し、リアルタイムで提案を行い、退屈なプロセスを自動化し、標準的なコードベース構造を生成する、AI搭載の開発環境を構築することです。\n"},{"id":"25rv5jzih","title":"ブラケティング","content":"Cosense（Scrapbox）で生まれた、角括弧でリンク化することをさす言葉。\n\n参考\n- [ブラケティング - Cosense ヘルプ](https://scrapbox.io/help-jp/%E3%83%96%E3%83%A9%E3%82%B1%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0)\n\nこの[[Rhizonote]]でもWikiリンク形式を採用しているのでブラケティングでリンク化する。"},{"id":"0bxsrwtq7","title":"公開ノートテスト","content":"このノートが公開されていたらOKなんだけど。\n\n公開リンク → [[Rhizonote]]\n\n非公開リンク → [[Rhizonote開発ログ]]\n\n公開できた！\n\nDropboxAPIの仕様がいまいちわからんくて認証切れないか不安だけど、公開できたのはめっちゃウレシイ！\n\n実装までの道筋はClaudeにRhizonoteのリポジトリを読み込ませてこっちでやるべき作業やコードを教えてもらった。\n\n▼画像テスト\n![](https://gyazo.com/0c6e1c8590cd6c419be4b63627f50dd3/thumb/800)\n"},{"id":"131b86ylu","title":"発見とは何か","content":"発見とは、これまで見えていなかった「何か」を、あるものとして認識すること。\n"},{"id":"ocfy7d50j","title":"豆論文","content":"[[『知的生産の技術』]]において[[梅棹忠夫]]が使った表現。\n手帳やカードに書くのはメモではなく論文である。\n\n> p.25 わたしたちが「手帳」に書いたのは、「発見」である。まいにちの経験のなかで、なにかの意味で、これはおもしろいとおもった現象を記述するのである。あるいは、自分の着想を記録するのである。それも、心おぼえのために、みじかい単語やフレーズをかいておくというのではなく、ちゃんとした文章でかくのである。ある意味では、それはそのままでも小さな論文──ないしは論文の草稿──となりうるような性質のものであった。すくなくともそういう体裁をととのえている。そのような豆論文を、まいにち、いろいろな現象をとらえて、つぎつぎとかいてゆくのである。\n\n> p.39 大学ノートでは、ポケットにはいらないから、やはりちいさな手帳ということになる。しかし、これは単なるメモではなく、小論文をかくものである。\n\n> p.55 カードは、他人がよんでもわかるように、しっかりと、完全な文章でかくのである。「発見の手帳」についてのべたときに、豆論文を執筆するのだといったが、その原則はカードについてもまったくおなじである。カードは、メモではない。\n> そのかわり、豆論文にはかならず「みだし」をつける。カードの上欄にそれをかいておけば検索に便利である。「みだし」は、豆論文の標題でもいいが、むしろその内容の一行サマリーといったもののほうが、いっそうその目的にかなっているだろう。"},{"id":"yf1tjfu4q","title":"カードには一つの事柄についてのみ書く","content":"それぞれ独立して意味として完結しているとよい。他のカードとつながりやすくなるし、単体で読んで意味がわかるのも大事。\n\n[[豆論文]]や[Evergreen notes should be atomic](https://notes.andymatuschak.org/zNUaiGAXp21eorsER1Jm9yU)に詳しい。"},{"id":"qq45xu1zm","title":"Rhizonote","content":"- [Rhizonote](https://morvra.github.io/rhizonote/)\n\n自作のMarkDownエディタ。\nブラウザで動くObsidian的なものがほしかったのがきっかけで開発を始めた。\n\nおもにGoogleAIStudioで[[バイブコーディング]]して作成した。\n\n- Dropboxで同期する\n- マークダウンプレビュー\n- 内部リンクをWikiリンク方式で扱える\n- タスク行を抽出して一覧\n- デイリーノートとそのテンプレート\n- Split viewでノートを並べられる（プレビュー用にも）\n- ランダムノート\n- リスト記号やインデントの自動挿入\n"},{"id":"alqrlvr9c","title":"B-TRON","content":"> BTRON（ビートロン）は、東京大学の坂村健教授が提唱したTRONプロジェクトにおける、ビジネス・パーソナルコンピュータ向けのオペレーティングシステム（OS）とその関連仕様の総称\n> BTRONでは、ファイル管理モデルとして、従来のディレクトリ（フォルダ）によるツリー構造をなすモデルではなく、実身（じっしん）/仮身（かしん）モデルと呼ぶ任意の有向グラフ構造をなすネットワーク型のモデルを採用している。\n\n[BTRON - Wikipedia](https://ja.wikipedia.org/wiki/BTRON)\n\n"},{"id":"ehecwyi0n","title":"手動で直したいときのプロンプト","content":"\n今回は手動で修正するので、ファイルに変更を加えずに、元のファイルにコピペできるように、修正・改善するべき箇所を明示して部品ごとにコードを省略せずに生成してください。また、元のコードにどのような問題がありそれをどう変更したのか、わかりやすく教えてください。\n\n---\n\n[[バイブコーディング]]において、コードが冗長化してくると細かい修正でも長時間かかるようになるので、手動で修正できるようになるとだいぶ効率的。"},{"id":"kz3v7rbeb","title":"Rhizonoteの参考資料","content":"\n[[Rhizonote]]を開発するうえで参考になりそうなものを集める\n\n- Cosense, Obsidian関連のページはそのまま使えることが多そう\n- [[ブラケティング]]\n- [[デジタルガーデン]]\n- [[B-TRON]]\n- [Linking Your Thinking](https://www.linkingyourthinking.com/)\n- [アトミックノートの作り方 - ごりゅご.com](https://goryugo.com/20220930/how-to-take-atomic-notes/)\n"},{"id":"7reyskvdg","title":"スライドカーソル","content":"\nエディタやキーボードアプリの、スワイプでカーソルを移動させる機能。\n\n単純に便利だし、何も書いてない時の手慰みにもなってよい。\n[[Rhizonote]]にも採用している。\n"},{"id":"d0sdxq1tt","title":"公開済みノートだけを絞り込みできるようにした","content":"\n[[Rhizonote開発ログ]]\n\n- サイドバーで「is:published」と検索する\n- GridViewでPublishedボタンで絞り込み\n"},{"id":"llfaalsug","title":"d-PoIC","content":"\n自作の[[PoIC]]用Webアプリ。\n\n- [d-PoIC](https://morvra.github.io/poic/)\n"},{"id":"ro6wgwyp5","title":"morvra","content":"\n「もーぶら」と読む。ハンドルネーム。\n\n個人サイト\n- [morvra lists](https://morvra.github.io/)\n\n自作ツール\n- [[Rhizonote]]\n- [[d-PoIC]]\n  - [CardBoard](https://morvra.github.io/cardboard)\n- [[八方思案]]\n\nよく使ってるサービス\n- Workflowy\n- GitHub\n- Gemini\n"},{"id":"4eh76llyh","title":"八方思案","content":"\n自作のマンダラート用のWebアプリ。\n\n- [八方思案](https://morvra.github.io/mandalart)\n"},{"id":"8l8l4j3i1","title":"PoIC","content":"\n情報カードをつかった[[知的生産]]の技法。Pile of Index Cardsの略。\n\nWiki: [メインページ | Pile of Index Cards](https://poic2023.capture.jp/)\n\nカードは4タイプに分類される\n- 記録\n- 発見\n- GTD\n- 参照\n\nそれを時系列でスタックしていき、テーマごとにタスクフォースを編成、再生産を行う。\nカードは処分されてドック（カードを並べる箱）のエントロピーは減少する。\nというサイクル。\n"},{"id":"mm6bz0fez","title":"思ったことは発見ではない","content":"\n思ったことは、その場で立ち上がる反応にすぎず、理由や根拠を持たない。\nそれをメモとして外に出し、深掘り・展開・検証していくことで、はじめて「考えたこと」になり、発見として残る。→ [[発見とは何か]]\n\nそしてそれを人にわかるかたちで提出することで[[知的生産]]になる。\n\n＊Workflowyのinboxや日付トピックは、思いつきを考え事に育てるためのPoICでいう野帳であり、発見カードは、そのあとに残る。"},{"id":"3gdm4pq1z","title":"知的生産","content":"\n> 「知的生産というのは、頭をはたらかせて、なにかあたらしいことがら──情報──を、ひとにわかるかたちで提出すること\n\nby 梅棹忠夫  [[『知的生産の技術』]]\n\n[[発見とは何か]]に通ずるものがありそう。"},{"id":"w8wi7v6mk","title":"About","content":"\n[[Rhizoroji]]は[[morvra]]が自作のノートアプリ[[Rhizonote]]で書いた思考の断片を、公開・共有するための場所です。\n\n## コンセプト：Rhizome × 露地\n名前の由来は、生物学的な「地下茎（Rhizome）」と、茶庭における「露地（Roji）」を掛け合わせたものです。\n\n- Rhizome: 地下で網目状に広がり、予期せぬ場所から芽を出す思考の繋がり。\n- 露地: 茶室（本質的な場）へ至るまでの、自然の姿を尊ぶ庭園。\n\n茶室の露地がそうであるように、ここには作為的な完成品ばかりではなく、ありのままの「自然な思考」を置いています。リンクという飛び石を渡りながら、網目状に広がる知識の散策を楽しんでいただければ幸いです。\n\n## デジタルガーデンとして\nこの場所は、いわゆる[[デジタルガーデン]]です。（Topページは作成日順なのでその点では思想に反していますが）\n\n庭の草木が日々形を変えるように、ここにあるノートも、\n\n- 書きかけの断片（Seed）\n- 成長途中の考察（Sprout）\n- あるいは真偽不明の仮説\n\nなどが混在しています。\n\n完成された「記事」を並べる場所ではなく、思考が育っていくプロセスそのものを公開しています。"},{"id":"utpy3yn1b","title":"Rhizoroji","content":"\n自作ノートアプリ、[[Rhizonote]]に書いたノートを公開する場所。\n\n- [Rhizoroji](https://morvra.github.io/rhizoroji/)\n\n名前の由来はRhizome + 露地。詳しくは[[About]]で。"},{"id":"8od589kc8","title":"Wiki","content":"\n> 「Wiki（ウィキ）」とは、誰でも簡単にウェブページの作成・編集・共有ができるシステムの総称で、ハワイ語の「速い」を意味する「wikiwiki（ウィキウィキ）」に由来します。不特定多数の人が共同で情報を集積・更新するのに適しており、代表例はオンライン百科事典の「Wikipedia（ウィキペディア）」です。 \nby Gemini"},{"id":"6bhagfw5v","title":"Rhizonoteは自分Wikiとして使う","content":"\nWorkflowyとRhizonoteの使い分けを考えていて、「[[Rhizonote]]は自分[[Wiki]]として使うくらいの距離感がいい」かもという結論に至った。\n\nデイリーノートは一旦おやすみ。\n"},{"id":"h02t7flb2","title":"無の会話","content":"\n普通の雑談なんだけど、より中身の無さにフォーカスした概念？\n\n> 会社のおじさん『エアコン効いた部屋にいると涼しいけど外に出ると暑いな！』\n> 私『確かに社内はエアコン効いてて涼しいですが外は暑いですよね！』\n[Togetter](https://togetter.com/li/2199505)\n\nこの概念好き。\nこういう[[コミュニケーション]]の積み重ねで仲良くなりそう。ニンゲンって。\n\nいわゆるコミュ障はこれが苦手なイメージ。"}];
+      
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      }
+      
+      function openRandomNote() {
+        const randomId = allNoteIds[Math.floor(Math.random() * allNoteIds.length)];
+        window.location.href = randomId + '.html';
+      }
+      
+      function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const overlay = document.querySelector('.overlay');
+        
+        sidebar.classList.toggle('closed');
+        main.classList.toggle('expanded');
+        
+        if (window.innerWidth <= 768) {
+          sidebar.classList.toggle('open');
+          overlay.classList.toggle('show');
+        }
+      }
+      
+      function toggleFolder(header) {
+        const icon = header.querySelector('.folder-icon');
+        const notesList = header.nextElementSibling;
+        
+        icon.classList.toggle('collapsed');
+        notesList.classList.toggle('collapsed');
+      }
+      
+      function handleResize() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.querySelector('.overlay');
+        
+        if (window.innerWidth > 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('show');
+        }
+      }
+      
+      function toggleSearch() {
+        const modal = document.getElementById('searchModal');
+        const input = document.getElementById('searchInput');
+        const isOpen = modal.classList.contains('show');
+        
+        if (isOpen) {
+          modal.classList.remove('show');
+          input.value = '';
+          document.getElementById('searchResults').innerHTML = '';
+        } else {
+          modal.classList.add('show');
+          setTimeout(() => input.focus(), 100);
+        }
+      }
+      
+      function closeSearchOnOverlay(event) {
+        if (event.target.id === 'searchModal') {
+          toggleSearch();
+        }
+      }
+      
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      function highlightText(text, query) {
+        if (!query) return escapeHtml(text);
+        const escapedText = escapeHtml(text);
+        const parts = [];
+        let remaining = escapedText;
+        let lowerRemaining = remaining.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        
+        while (true) {
+          const index = lowerRemaining.indexOf(lowerQuery);
+          if (index === -1) {
+            parts.push(remaining);
+            break;
+          }
+          parts.push(remaining.slice(0, index));
+          parts.push('<span class="search-result-highlight">' + remaining.slice(index, index + query.length) + '</span>');
+          remaining = remaining.slice(index + query.length);
+          lowerRemaining = remaining.toLowerCase();
+        }
+        
+        return parts.join('');
+      }
+      
+      function performSearch(query) {
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (!query.trim()) {
+          resultsDiv.innerHTML = '';
+          return;
+        }
+        
+        const lowerQuery = query.toLowerCase();
+        const results = allNotes
+          .filter(note => {
+            const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+            const contentMatch = note.content.toLowerCase().includes(lowerQuery);
+            return titleMatch || contentMatch;
+          })
+          .map(note => {
+            const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+            let snippet = note.content;
+            
+            // 画像を削除
+            while (snippet.includes('![')) {
+              const start = snippet.indexOf('![');
+              const end = snippet.indexOf(')', start);
+              if (end === -1) break;
+              snippet = snippet.slice(0, start) + snippet.slice(end + 1);
+            }
+            
+            // Wikiリンクをテキストに置換
+            while (snippet.includes('[[')) {
+              const start = snippet.indexOf('[[');
+              const end = snippet.indexOf(']]', start);
+              if (end === -1) break;
+              const title = snippet.slice(start + 2, end);
+              snippet = snippet.slice(0, start) + title + snippet.slice(end + 2);
+            }
+            
+            // 改行や特殊文字をスペースに置換
+            snippet = snippet.split('').map(c => {
+              if (c === '#' || c.charCodeAt(0) === 10 || c.charCodeAt(0) === 13 || c.charCodeAt(0) === 9) {
+                return ' ';
+              }
+              return c;
+            }).join('');
+            
+            // 連続スペースを1つに
+            const words = snippet.split(' ').filter(w => w.length > 0);
+            snippet = words.join(' ');
+            
+            if (!titleMatch) {
+              const index = snippet.toLowerCase().indexOf(lowerQuery);
+              if (index >= 0) {
+                const start = Math.max(0, index - 60);
+                const end = Math.min(snippet.length, index + query.length + 60);
+                snippet = (start > 0 ? '...' : '') + snippet.slice(start, end) + (end < snippet.length ? '...' : '');
+              }
+            } else {
+              snippet = snippet.slice(0, 120);
+            }
+            
+            return { ...note, snippet };
+          })
+          .slice(0, 50);
+        
+        if (results.length === 0) {
+          resultsDiv.innerHTML = '<div class="search-no-results">No results found</div>';
+          return;
+        }
+        
+        resultsDiv.innerHTML = results.map(result => 
+          '<a href="' + result.id + '.html" class="search-result-item">' +
+            '<div class="search-result-title">' + highlightText(result.title, query) + '</div>' +
+            '<div class="search-result-snippet">' + highlightText(result.snippet, query) + '</div>' +
+          '</a>'
+        ).join('');
+      }
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            performSearch(e.target.value);
+          });
+        }
+        
+        // Ctrl+K or Cmd+K でサーチを開く
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            toggleSearch();
+          }
+          if (e.key === 'Escape') {
+            const modal = document.getElementById('searchModal');
+            if (modal.classList.contains('show')) {
+              toggleSearch();
+            }
+          }
+        });
+      });
+      
+      window.addEventListener('resize', handleResize);
+    
+  </script>
+</body>
+</html>
